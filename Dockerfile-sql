@@ -1,0 +1,39 @@
+#docker build --build-arg PASSWORD=~!@#`123~!@# -t northwind:1.0 .
+#docker run -p 1433:1433 --name sqldb -d northwind:1.0
+#docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Passw0rd' -p 1433:1433 -d --name sqlserver2022:v1
+#CHECK_POLICY=OFF
+
+FROM mcr.microsoft.com/mssql/server:2022-latest
+
+# user root to prevent permission denied error on apt-get
+USER root
+RUN apt-get update \
+    && apt-get install unzip -y
+
+# Install SQLPackage for Linux and make it executable
+#RUN wget -progress=bar:force -q -O sqlpackage.zip https://go.microsoft.com/fwlink/?linkid=873926 \
+RUN wget -progress=bar:force -q -O sqlpackage.zip https://aka.ms/sqlpackage-linux \
+    && unzip -qq sqlpackage.zip -d /opt/sqlpackage \
+    && chmod +x /opt/sqlpackage/sqlpackage
+
+# Add the DACPAC to the image
+# COPY Northwind.dacpac /tmp/db.dacpac
+#COPY Sql.cobi-backend.dacpac /tmp/db.dacpac
+#COPY test.dacpac /tmp/db.dacpac
+
+# Configure external build arguments to allow configurability.
+ARG DBNAME=ue1nxdev-cohortbuilder-db1
+ARG PASSWORD
+
+# Configure the required environmental variables
+ENV ACCEPT_EULA=Y
+ENV MSSQL_SA_PASSWORD=
+
+# Launch SQL Server, confirm startup is complete, deploy the DACPAC, then terminate SQL Server.
+# See https://stackoverflow.com/a/51589787/488695
+#RUN ( /opt/mssql/bin/sqlservr & ) | grep -q "Service Broker manager has started" \
+#    && /opt/sqlpackage/sqlpackage /a:Publish /tsn:. /tdn:${DBNAME} /tu:sa /tp:$MSSQL_SA_PASSWORD /sf:/tmp/db.dacpac \
+#    && rm /tmp/db.dacpac \
+#    && pkill sqlservr
+
+#/opt/sqlpackage/sqlpackage /a:Publish /tsn:. /tdn:ue1nxdev-cohortbuilder-db1 /tu:sa /tp:~!@#`123~!@# /sf:/tmp/db.dacpac
